@@ -1,51 +1,44 @@
-create or replace procedure day1_part2 as
-
-   cursor c1 is
-    select input_data, value
-    from day1_part2_view a
-    where location = (select min(location) from day1_part2_view b where a.input_data = b.input_data);
+create or replace procedure day2_part1 as 
+    
+    cursor c1 is
+        select distinct to_number ( substr( game_num, instr(game_num,' ',1) ) ) val From day2_part1_view
+        where instr(value1,'blue',1) <> 0
+        and to_number( substr(value1, 1, instr(value1,' ',2)-1 ) ) > 14
+        union
+        select distinct to_number ( substr( game_num, instr(game_num,' ',1) ) ) From day2_part1_view
+        where instr(value1,'red',1) <> 0
+        and to_number( substr(value1, 1, instr(value1,' ',2)-1 ) ) > 12
+        union
+        select distinct to_number ( substr( game_num, instr(game_num,' ',1) ) ) From day2_part1_view
+        where instr(value1,'green',1) <> 0
+        and to_number( substr(value1, 1, instr(value1,' ',2)-1 ) ) > 13 ;
 
     c1_rec c1%rowtype;
 
-    v_total number;
-    v_cat varchar2(100);
+    v_starting_total number := 0;
 
-    function f_get_last (p_input varchar2) 
-    return varchar2 is    
-        v_return varchar2(100) := null;
+    begin
 
-        begin
-            select value
-            into v_return
-            From day1_part2_last_view a
-            where location = (select max(location) from day1_part2_last_view b where a.input_data = b.input_data) 
-            and a.input_data = p_input;
+        select sum(to_number ( substr( game_num, instr(game_num,' ',1) ) ))
+        into v_starting_total
+        from day2part1_table;
 
-            return v_return;
-        end;
+        open c1;
 
-begin
+        fetch c1 into c1_rec;
 
-   v_cat := null;
-   v_total := 0;
+        while (c1%found) loop
 
-   open c1;
+            v_starting_total := v_starting_total - c1_rec.val;
 
-   fetch c1 into c1_rec;
+            fetch c1 into c1_rec;
+        end loop;
 
-   while (c1%found) loop
+        close c1;
 
-    v_cat := c1_rec.value || f_get_last(c1_rec.input_data);
-    v_total := v_total + to_number(v_cat);
+        insert into answer_table values (v_starting_total);
 
-    fetch c1 into c1_rec;
+        commit;
 
-   end loop;
+    end;
 
-    close c1;
-
-    insert into answer_table values (v_total);
-
-    commit;
-
-END;
